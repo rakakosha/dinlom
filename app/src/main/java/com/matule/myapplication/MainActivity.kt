@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import com.matule.myapplication.data.ObservationRepository
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Info
@@ -45,6 +47,7 @@ import com.matule.myapplication.data.LocalMessierRepository
 import com.matule.myapplication.models.MessierObject
 import com.matule.myapplication.models.MoonPhaseInfo
 import com.matule.myapplication.models.Planet
+import com.matule.myapplication.models.UserObservation
 import com.matule.myapplication.utils.MoonPhaseCalculator
 import kotlinx.coroutines.delay
 import models.Screen
@@ -98,12 +101,14 @@ fun AstronomyGuideApp() {
                 )
         ) {
             when {
-                selectedPlanet != null -> {
-                    PlanetDetailScreen(
-                        planet = selectedPlanet!!,
-                        onBackClick = {
-                            selectedPlanet = null
-                            currentScreen = Screen.PLANETS
+                isAddingObservation -> {
+                    AddObservationScreen(
+                        onBackClick = { isAddingObservation = false },
+                        onSaveClick = { observation ->
+                            val repo = ObservationRepository(context)
+                            repo.saveObservation(observation)
+                            isAddingObservation = false
+                            // Обновить список
                         }
                     )
                 }
@@ -379,6 +384,275 @@ fun HomeScreen(onNavigate: (Screen) -> Unit) {
             }
         }
     }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddObservationScreen(
+    onBackClick: () -> Unit,
+    onSaveClick: (UserObservation) -> Unit
+) {
+    val context = LocalContext.current
+    var objectName by remember { mutableStateOf("") }
+    var objectType by remember { mutableStateOf("") }
+    var observationDate by remember { mutableStateOf(Date()) }
+    var location by remember { mutableStateOf("") }
+    var telescopeUsed by remember { mutableStateOf("") }
+    var weatherConditions by remember { mutableStateOf("") }
+    var seeingRating by remember { mutableStateOf(3) }
+    var personalNotes by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf("planned") }
+
+    val showDatePicker = remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAFAFA))
+    ) {
+        // Верхняя панель
+        Surface(
+            color = Color(0xFF333333),
+            modifier = Modifier.fillMaxWidth(),
+            shadowElevation = 4.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .height(56.dp)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Назад",
+                        tint = Color.White
+                    )
+                }
+                Text(
+                    text = "Новое наблюдение",
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+
+                TextButton(
+                    onClick = {
+                        if (objectName.isNotBlank()) {
+                            val observation = UserObservation(
+                                objectName = objectName,
+                                objectType = objectType.takeIf { it.isNotBlank() },
+                                observationDate = observationDate,
+                                location = location.takeIf { it.isNotBlank() },
+                                telescopeUsed = telescopeUsed.takeIf { it.isNotBlank() },
+                                weatherConditions = weatherConditions.takeIf { it.isNotBlank() },
+                                seeingRating = seeingRating,
+                                personalNotes = personalNotes.takeIf { it.isNotBlank() },
+                                status = status
+                            )
+                            onSaveClick(observation)
+                        }
+                    }
+                ) {
+                    Text("Сохранить", color = Color.White)
+                }
+            }
+        }
+
+        // Форма
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                OutlinedTextField(
+                    value = objectName,
+                    onValueChange = { objectName = it },
+                    label = { Text("Название объекта *") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = objectName.isBlank()
+                )
+            }
+
+            item {
+                OutlinedTextField(
+                    value = objectType,
+                    onValueChange = { objectType = it },
+                    label = { Text("Тип объекта") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = formatDate(observationDate),
+                        onValueChange = {},
+                        label = { Text("Дата наблюдения") },
+                        modifier = Modifier.weight(1f),
+                        enabled = false
+                    )
+
+                    IconButton(
+                        onClick = { showDatePicker.value = true },
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Выбрать дату"
+                        )
+                    }
+                }
+            }
+
+            item {
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = { Text("Место наблюдения") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+
+            item {
+                OutlinedTextField(
+                    value = telescopeUsed,
+                    onValueChange = { telescopeUsed = it },
+                    label = { Text("Используемый телескоп") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+
+            item {
+                OutlinedTextField(
+                    value = weatherConditions,
+                    onValueChange = { weatherConditions = it },
+                    label = { Text("Погодные условия") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+
+            item {
+                Text(
+                    text = "Оценка качества наблюдения: $seeingRating/5",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+                Slider(
+                    value = seeingRating.toFloat(),
+                    onValueChange = { seeingRating = it.toInt() },
+                    valueRange = 1f..5f,
+                    steps = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            item {
+                OutlinedTextField(
+                    value = personalNotes,
+                    onValueChange = { personalNotes = it },
+                    label = { Text("Заметки") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Статус наблюдения",
+                            fontSize = 14.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = status == "planned",
+                                onClick = { status = "planned" },
+                                label = { Text("Запланировано") }
+                            )
+                            FilterChip(
+                                selected = status == "completed",
+                                onClick = { status = "completed" },
+                                label = { Text("Выполнено") }
+                            )
+                            FilterChip(
+                                selected = status == "cancelled",
+                                onClick = { status = "cancelled" },
+                                label = { Text("Отменено") }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Диалог выбора даты
+    if (showDatePicker.value) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker.value = false },
+            onDateSelected = { millis ->
+                millis?.let {
+                    observationDate = Date(it)
+                    showDatePicker.value = false
+                }
+            }
+        )
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerDialog(
+    onDismissRequest: () -> Unit,
+    onDateSelected: (Long?) -> Unit
+) {
+    val datePickerState = rememberDatePickerState()
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Выберите дату") },
+        text = {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = false
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDateSelected(datePickerState.selectedDateMillis)
+                }
+            ) {
+                Text("ОК")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Отмена")
+            }
+        }
+    )
 }
 
 @Composable
@@ -1937,14 +2211,14 @@ object LocalPlanetDatabase {
         )
     }
 }
-@Composable
-fun ObservationsScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("Мои наблюдения - в разработке")
-    }
+
+
+
+
+
+fun formatDate(date: Date): String {
+    val format = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+    return format.format(date)
 }
 
 @Composable
