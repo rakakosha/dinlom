@@ -13,3 +13,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+.android-local/
+.gradle-local/
+.tmp/
+__pycache__/
+hs_err_pid*.log
+.idea/appInsightsSettings.xml
+.idea/markdown.xml
