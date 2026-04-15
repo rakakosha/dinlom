@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.matule.myapplication.models.Planet
 import com.matule.myapplication.models.UserObservation
 import java.util.Date
+import java.util.Locale
 
 fun createObservationFromPlanet(planet: Planet): UserObservation {
     return UserObservation(
@@ -46,4 +47,20 @@ fun DetailLine(label: String, value: String) {
         Text(text = label, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
         Text(text = value, fontWeight = FontWeight.Medium)
     }
+}
+
+fun formatOptionalDouble(value: Double?, digits: Int = 2): String {
+    return value?.let { "%.${digits}f".format(Locale.US, it) } ?: "-"
+}
+
+fun formatAngleValue(value: Double?, digits: Int = 2): String {
+    return value?.let { "${formatOptionalDouble(it, digits)}°" } ?: "-"
+}
+
+fun formatHoursValue(value: Double?, digits: Int = 2): String {
+    return value?.let { "${formatOptionalDouble(it, digits)} h" } ?: "-"
+}
+
+fun formatAuValue(value: Double?, digits: Int = 4): String {
+    return value?.let { "${formatOptionalDouble(it, digits)} AU" } ?: "-"
 }

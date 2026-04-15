@@ -46,6 +46,7 @@ dependencies {
     // Для работы с NIO
     implementation("org.apache.mina:mina-core:2.0.21")
     implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("io.github.cosinekitty:astronomy:2.1.19")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

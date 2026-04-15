@@ -29,12 +29,17 @@ val LocalSettingsRepository = staticCompositionLocalOf<SettingsRepository> {
     error("SettingsRepository is not provided")
 }
 
+val LocalAstroCalculator = staticCompositionLocalOf<AstroCalculator> {
+    error("AstroCalculator is not provided")
+}
+
 @Stable
 class AstronomyGuideAppState(
     initialSettings: AppSettings,
     val settingsRepository: SettingsRepository,
     val observationRepository: ObservationRepository,
-    val messierRepository: LocalMessierRepository
+    val messierRepository: LocalMessierRepository,
+    val astroCalculator: AstroCalculator
 ) {
     var settings by mutableStateOf(initialSettings)
         private set
@@ -153,13 +158,15 @@ fun rememberAstronomyGuideAppState(): AstronomyGuideAppState {
     val settingsRepository = remember { SettingsRepository(context) }
     val observationRepository = remember { ObservationRepository(context) }
     val messierRepository = remember { LocalMessierRepository(context) }
+    val astroCalculator = remember { AstroCalculator() }
 
-    return remember(settingsRepository, observationRepository, messierRepository) {
+    return remember(settingsRepository, observationRepository, messierRepository, astroCalculator) {
         AstronomyGuideAppState(
             initialSettings = settingsRepository.loadSettings(),
             settingsRepository = settingsRepository,
             observationRepository = observationRepository,
-            messierRepository = messierRepository
+            messierRepository = messierRepository,
+            astroCalculator = astroCalculator
         )
     }
 }

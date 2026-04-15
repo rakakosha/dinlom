@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.matule.myapplication.data.PlanetDatabase
 import com.matule.myapplication.data.ObservationRepository
 import com.matule.myapplication.models.ObservationPhoto
 import com.matule.myapplication.models.UserObservation
@@ -61,11 +62,22 @@ fun ObservationDetailScreenContent(
     onDeleteClick: () -> Unit
 ) {
     val repository = LocalObservationRepository.current
+    val calculator = LocalAstroCalculator.current
     var photos by remember(observation.id) { mutableStateOf(repository.getPhotosForObservation(observation.id)) }
     var previewPhoto by remember { mutableStateOf<ObservationPhoto?>(null) }
     var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var photoDescription by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val matchedPlanet = remember(observation.objectName) {
+        PlanetDatabase.getPlanetByName(observation.objectName)
+    }
+    val astronomySnapshot = remember(
+        observation.id,
+        observation.observationDate,
+        matchedPlanet?.latinName
+    ) {
+        matchedPlanet?.let { calculator.calculatePlanetPosition(it.latinName, observation.observationDate) }
+    }
 
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         pendingPhotoUri = uri
@@ -124,6 +136,60 @@ fun ObservationDetailScreenContent(
                         Column(modifier = Modifier.padding(18.dp)) {
                             Text(tr("Заметки", "Notes"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             Text(notes, modifier = Modifier.padding(top = 8.dp), fontStyle = FontStyle.Italic)
+                        }
+                    }
+                }
+            }
+            astronomySnapshot?.let { position ->
+                item {
+                    Card(shape = RoundedCornerShape(16.dp)) {
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Text(
+                                tr("Астрономические данные", "Astronomy snapshot"),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                            Text(
+                                tr("Параметры на дату наблюдения", "Values for the observation date"),
+                                modifier = Modifier.padding(top = 6.dp),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            DetailLine("X", formatOptionalDouble(position.heliocentricXAu, 7))
+                            DetailLine("Y", formatOptionalDouble(position.heliocentricYAu, 7))
+                            DetailLine("Z", formatOptionalDouble(position.heliocentricZAu, 7))
+                            if (position.hasLocalSkyPosition) {
+                                DetailLine(tr("Высота", "Altitude"), formatAngleValue(position.altitude))
+                                DetailLine(tr("Азимут", "Azimuth"), formatAngleValue(position.azimuth))
+                                DetailLine(
+                                    tr("Расстояние от Земли", "Distance from Earth"),
+                                    formatAuValue(position.distanceFromEarthAu)
+                                )
+                                position.constellationCode?.let { code ->
+                                    DetailLine(
+                                        tr("Созвездие", "Constellation"),
+                                        buildString {
+                                            append(code)
+                                            position.constellationName?.let { name ->
+                                                append(" (")
+                                                append(name)
+                                                append(")")
+                                            }
+                                        }
+                                    )
+                                }
+                                position.magnitude?.let {
+                                    DetailLine(tr("Блеск", "Magnitude"), formatOptionalDouble(it))
+                                }
+                            } else {
+                                Text(
+                                    tr(
+                                        "Для Земли локальные небесные координаты не рассчитываются.",
+                                        "Local sky coordinates are not calculated for Earth."
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                                )
+                            }
                         }
                     }
                 }

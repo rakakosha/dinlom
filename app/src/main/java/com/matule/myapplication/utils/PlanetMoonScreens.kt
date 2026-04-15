@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,14 +35,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.matule.myapplication.data.ObservationRepository
 import com.matule.myapplication.data.PlanetDatabase
 import com.matule.myapplication.models.MoonPhaseInfo
 import com.matule.myapplication.models.MoonPhaseType
 import com.matule.myapplication.models.Planet
 import java.util.Calendar
 import java.util.Date
-import java.util.Locale
 
 @Composable
 fun MoonPhaseScreenContent(onBackClick: () -> Unit) {
@@ -123,10 +120,22 @@ fun MoonPhaseScreenContent(onBackClick: () -> Unit) {
                             fontSize = 18.sp
                         )
                         Spacer(modifier = Modifier.height(10.dp))
-                        PhaseInfoRow(tr("Новолуние", "New moon"), MoonPhaseCalculator.getNextPhaseDate(selectedDate, MoonPhaseType.NEW_MOON))
-                        PhaseInfoRow(tr("Первая четверть", "First quarter"), MoonPhaseCalculator.getNextPhaseDate(selectedDate, MoonPhaseType.FIRST_QUARTER))
-                        PhaseInfoRow(tr("Полнолуние", "Full moon"), MoonPhaseCalculator.getNextPhaseDate(selectedDate, MoonPhaseType.FULL_MOON))
-                        PhaseInfoRow(tr("Последняя четверть", "Last quarter"), MoonPhaseCalculator.getNextPhaseDate(selectedDate, MoonPhaseType.LAST_QUARTER))
+                        PhaseInfoRow(
+                            tr("Новолуние", "New moon"),
+                            MoonPhaseCalculator.getNextPhaseDate(selectedDate, MoonPhaseType.NEW_MOON)
+                        )
+                        PhaseInfoRow(
+                            tr("Первая четверть", "First quarter"),
+                            MoonPhaseCalculator.getNextPhaseDate(selectedDate, MoonPhaseType.FIRST_QUARTER)
+                        )
+                        PhaseInfoRow(
+                            tr("Полнолуние", "Full moon"),
+                            MoonPhaseCalculator.getNextPhaseDate(selectedDate, MoonPhaseType.FULL_MOON)
+                        )
+                        PhaseInfoRow(
+                            tr("Последняя четверть", "Last quarter"),
+                            MoonPhaseCalculator.getNextPhaseDate(selectedDate, MoonPhaseType.LAST_QUARTER)
+                        )
                     }
                 }
             }
@@ -184,7 +193,11 @@ private fun MoonDayCard(info: MoonPhaseInfo) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(text = formatDateTime(info.date, "dd MMM"), fontWeight = FontWeight.Bold)
-            Text(text = moonPhaseEmoji(info.type), fontSize = 28.sp, modifier = Modifier.padding(vertical = 6.dp))
+            Text(
+                text = moonPhaseEmoji(info.type),
+                fontSize = 28.sp,
+                modifier = Modifier.padding(vertical = 6.dp)
+            )
             Text(text = "${info.illumination}%", color = MaterialTheme.colorScheme.primary)
         }
     }
@@ -195,10 +208,10 @@ fun PlanetsScreenContent(
     onBackClick: () -> Unit,
     onPlanetClick: (Planet) -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val repository = remember { ObservationRepository(context) }
-    val calculator = remember { AstroCalculator() }
+    val repository = LocalObservationRepository.current
+    val calculator = LocalAstroCalculator.current
     val planets = remember { PlanetDatabase.getAllPlanets() }
+    val minuteBucket = System.currentTimeMillis() / 60_000L
     var addedPlanetId by remember { mutableStateOf<Int?>(null) }
 
     Column(
@@ -214,7 +227,7 @@ fun PlanetsScreenContent(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(planets) { planet ->
-                val position = remember(planet.id) {
+                val position = remember(planet.id, minuteBucket) {
                     calculator.calculatePlanetPosition(planet.latinName)
                 }
 
@@ -248,20 +261,43 @@ fun PlanetsScreenContent(
                                 onClick = {},
                                 label = {
                                     Text(
-                                        if (position.isVisible) tr("Видна", "Visible")
-                                        else tr("Ниже горизонта", "Below horizon")
+                                        when {
+                                            !position.hasLocalSkyPosition -> tr("Точка отсчета", "Reference body")
+                                            position.isVisible -> tr("Видна", "Visible")
+                                            else -> tr("Ниже горизонта", "Below horizon")
+                                        }
                                     )
                                 }
                             )
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(text = tr("Расстояние от Солнца", "Distance from Sun") + ": ${planet.distanceFromSunAu} а.е.")
-                        Text(text = tr("Спутники", "Moons") + ": ${planet.moonsCount}")
                         Text(
-                            text = tr("Текущая высота", "Current altitude") +
-                                ": ${"%.1f".format(Locale.US, position.altitude)}°"
+                            text = tr("Расстояние от Солнца", "Distance from Sun") +
+                                ": ${formatAuValue(position.distanceFromSunAu)}"
                         )
+                        Text(text = tr("Спутники", "Moons") + ": ${planet.moonsCount}")
+                        DetailLine(
+                            tr("Текущая высота", "Current altitude"),
+                            if (position.hasLocalSkyPosition) formatAngleValue(position.altitude, 1)
+                            else tr("не применяется", "n/a")
+                        )
+                        position.constellationCode?.let { code ->
+                            DetailLine(
+                                tr("Созвездие", "Constellation"),
+                                buildString {
+                                    append(code)
+                                    position.constellationName?.let { name ->
+                                        append(" (")
+                                        append(name)
+                                        append(")")
+                                    }
+                                }
+                            )
+                        }
+                        position.magnitude?.let { magnitude ->
+                            DetailLine(tr("Блеск", "Magnitude"), formatOptionalDouble(magnitude))
+                        }
                         Text(
                             text = tr("Совет", "Tip") + ": ${planet.observationTips}",
                             modifier = Modifier.padding(top = 8.dp)
@@ -291,10 +327,10 @@ fun PlanetDetailScreenContent(
     planet: Planet,
     onBackClick: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val repository = remember { ObservationRepository(context) }
+    val repository = LocalObservationRepository.current
+    val calculator = LocalAstroCalculator.current
     val position = remember(planet.id) {
-        AstroCalculator().calculatePlanetPosition(planet.latinName)
+        calculator.calculatePlanetPosition(planet.latinName)
     }
     var saved by remember { mutableStateOf(false) }
 
@@ -319,7 +355,10 @@ fun PlanetDetailScreenContent(
                         Text(text = planet.description, fontSize = 16.sp)
                         Spacer(modifier = Modifier.height(12.dp))
                         DetailLine(tr("Диаметр", "Diameter"), "${planet.diameterKm} км")
-                        DetailLine(tr("Расстояние от Солнца", "Distance from Sun"), "${planet.distanceFromSunAu} а.е.")
+                        DetailLine(
+                            tr("Расстояние от Солнца", "Distance from Sun"),
+                            formatAuValue(position.distanceFromSunAu)
+                        )
                         DetailLine(tr("Спутники", "Moons"), planet.moonsCount.toString())
                         planet.orbitalPeriodDays?.let {
                             DetailLine(tr("Период обращения", "Orbital period"), "$it ${tr("суток", "days")}")
@@ -335,20 +374,85 @@ fun PlanetDetailScreenContent(
                 Card(shape = RoundedCornerShape(16.dp)) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Text(
+                            text = tr("Положение в Солнечной системе", "Solar system position"),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = tr(
+                                "Гелиоцентрические эклиптические координаты, AU",
+                                "Heliocentric ecliptic coordinates, AU"
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        DetailLine("X", formatOptionalDouble(position.heliocentricXAu, 7))
+                        DetailLine("Y", formatOptionalDouble(position.heliocentricYAu, 7))
+                        DetailLine("Z", formatOptionalDouble(position.heliocentricZAu, 7))
+                    }
+                }
+            }
+
+            item {
+                Card(shape = RoundedCornerShape(16.dp)) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Text(
                             text = tr("Положение на небе", "Sky position"),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(10.dp))
-                        DetailLine(tr("Прямое восхождение", "Right ascension"), "${"%.2f".format(Locale.US, position.rightAscension)} ч")
-                        DetailLine(tr("Склонение", "Declination"), "${"%.2f".format(Locale.US, position.declination)}°")
-                        DetailLine(tr("Азимут", "Azimuth"), "${"%.2f".format(Locale.US, position.azimuth)}°")
-                        DetailLine(tr("Высота", "Altitude"), "${"%.2f".format(Locale.US, position.altitude)}°")
-                        DetailLine(tr("Полушарие", "Hemisphere"), position.hemisphere)
-                        DetailLine(tr("Расстояние от Земли", "Distance from Earth"), "${"%.2f".format(Locale.US, position.distanceFromEarthAu)} а.е.")
-                        position.phase?.let { DetailLine(tr("Фаза", "Phase"), it) }
-                        position.riseTime?.let { DetailLine(tr("Восход", "Rise"), formatDateTime(it, "dd.MM HH:mm")) }
-                        position.setTime?.let { DetailLine(tr("Заход", "Set"), formatDateTime(it, "dd.MM HH:mm")) }
+                        if (position.hasLocalSkyPosition) {
+                            DetailLine(
+                                tr("Прямое восхождение", "Right ascension"),
+                                formatHoursValue(position.rightAscension)
+                            )
+                            DetailLine(tr("Склонение", "Declination"), formatAngleValue(position.declination))
+                            DetailLine(tr("Азимут", "Azimuth"), formatAngleValue(position.azimuth))
+                            DetailLine(tr("Высота", "Altitude"), formatAngleValue(position.altitude))
+                            DetailLine(tr("Полушарие", "Hemisphere"), hemisphereLabel(position.hemisphere))
+                            DetailLine(
+                                tr("Расстояние от Земли", "Distance from Earth"),
+                                formatAuValue(position.distanceFromEarthAu)
+                            )
+                            position.constellationCode?.let { code ->
+                                DetailLine(
+                                    tr("Созвездие", "Constellation"),
+                                    buildString {
+                                        append(code)
+                                        position.constellationName?.let { name ->
+                                            append(" (")
+                                            append(name)
+                                            append(")")
+                                        }
+                                    }
+                                )
+                            }
+                            position.magnitude?.let {
+                                DetailLine(tr("Блеск", "Magnitude"), formatOptionalDouble(it))
+                            }
+                            position.elongationDegrees?.let {
+                                DetailLine(tr("Элонгация", "Elongation"), formatAngleValue(it))
+                            }
+                            position.illuminationPercent?.let {
+                                DetailLine(tr("Освещенность", "Illumination"), "$it%")
+                            }
+                            position.riseTime?.let {
+                                DetailLine(tr("Восход", "Rise"), formatDateTime(it, "dd.MM HH:mm"))
+                            }
+                            position.setTime?.let {
+                                DetailLine(tr("Заход", "Set"), formatDateTime(it, "dd.MM HH:mm"))
+                            }
+                        } else {
+                            Text(
+                                text = tr(
+                                    "Для Земли локальные небесные координаты не рассчитываются, потому что наблюдатель находится на ней.",
+                                    "Local sky coordinates are not calculated for Earth because the observer is already on it."
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                            )
+                        }
                     }
                 }
             }
@@ -367,7 +471,10 @@ fun PlanetDetailScreenContent(
             item {
                 Card(shape = RoundedCornerShape(16.dp)) {
                     Column(modifier = Modifier.padding(18.dp)) {
-                        Text(text = tr("Советы для наблюдения", "Observation tips"), fontWeight = FontWeight.Bold)
+                        Text(
+                            text = tr("Советы для наблюдения", "Observation tips"),
+                            fontWeight = FontWeight.Bold
+                        )
                         Text(text = planet.observationTips, modifier = Modifier.padding(top = 8.dp))
                         Button(
                             onClick = {
@@ -376,11 +483,24 @@ fun PlanetDetailScreenContent(
                             },
                             modifier = Modifier.padding(top = 14.dp)
                         ) {
-                            Text(if (saved) tr("Добавлено", "Added") else tr("Добавить в наблюдения", "Add to observations"))
+                            Text(
+                                if (saved) tr("Добавлено", "Added")
+                                else tr("Добавить в наблюдения", "Add to observations")
+                            )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun hemisphereLabel(hemisphere: HemisphereVisibility): String {
+    return when (hemisphere) {
+        HemisphereVisibility.NORTHERN -> tr("Северное", "Northern")
+        HemisphereVisibility.SOUTHERN -> tr("Южное", "Southern")
+        HemisphereVisibility.BOTH -> tr("Оба полушария", "Both hemispheres")
+        HemisphereVisibility.NOT_APPLICABLE -> tr("Не применяется", "Not applicable")
     }
 }

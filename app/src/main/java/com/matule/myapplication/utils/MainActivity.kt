@@ -105,6 +105,7 @@ fun AstronomyGuideApp() {
         LocalSettingsRepository provides appState.settingsRepository,
         LocalObservationRepository provides appState.observationRepository,
         LocalMessierDataRepository provides appState.messierRepository,
+        LocalAstroCalculator provides appState.astroCalculator,
         LocalDensity provides Density(density.density, appState.settings.fontScale)
     ) {
         MaterialTheme(colorScheme = colorScheme) {

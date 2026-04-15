@@ -183,8 +183,9 @@ fun ScreenTopBar(
 @Composable
 fun HomeScreenContent(onNavigate: (Screen) -> Unit) {
     val currentMoonPhase = remember { MoonPhaseCalculator.getMoonPhase(Date()) }
-    val visiblePlanets = remember {
-        val calculator = AstroCalculator()
+    val calculator = LocalAstroCalculator.current
+    val minuteBucket = System.currentTimeMillis() / 60_000L
+    val visiblePlanets = remember(minuteBucket, calculator) {
         PlanetDatabase.getAllPlanets()
             .filter { it.latinName != "Earth" }
             .filter { calculator.calculatePlanetPosition(it.latinName).isVisible }
