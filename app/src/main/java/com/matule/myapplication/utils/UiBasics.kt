@@ -297,6 +297,7 @@ fun HomeScreenContent(onNavigate: (Screen) -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                QuickActionCard(tr("Астроновости", "Astro news")) { onNavigate(Screen.ASTRO_NEWS) }
                 QuickActionCard(tr("Мессье", "Messier")) { onNavigate(Screen.MESSIER_SEARCH) }
                 QuickActionCard(tr("Наблюдения", "Observations")) { onNavigate(Screen.OBSERVATIONS) }
                 QuickActionCard(tr("Фото", "Photos")) { onNavigate(Screen.PHOTOS) }
@@ -334,6 +335,7 @@ private fun QuickActionCard(
 fun SideMenuContent(
     currentScreen: Screen,
     onMenuItemClick: (Screen) -> Unit,
+    onCloseAppClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -343,6 +345,7 @@ fun SideMenuContent(
         Column(modifier = Modifier.fillMaxSize()) {
             val items = listOf(
                 Screen.HOME to tr("Главная", "Home"),
+                Screen.ASTRO_NEWS to tr("Астроновости", "Astro news"),
                 Screen.MOON_PHASE to tr("Фазы Луны", "Moon phases"),
                 Screen.TELESCOPE_GUIDE to tr("Памятка по телескопам", "Telescope guide"),
                 Screen.MESSIER_SEARCH to tr("Поиск Мессье", "Messier search"),
@@ -362,6 +365,15 @@ fun SideMenuContent(
                     modifier = Modifier.padding(top = if (index == 1) 12.dp else 0.dp)
                 )
             }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            MenuButtonContent(
+                text = tr("Закрыть приложение", "Close app"),
+                isSelected = false,
+                onClick = onCloseAppClick,
+                modifier = Modifier.padding(top = 12.dp)
+            )
         }
     }
 }

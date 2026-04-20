@@ -1,5 +1,6 @@
 package com.matule.myapplication.utils
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
@@ -72,6 +74,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AstronomyGuideApp() {
     val configuration = LocalConfiguration.current
+    val activity = LocalContext.current as? Activity
     val density = LocalDensity.current
     val appState = rememberAstronomyGuideAppState()
 
@@ -186,6 +189,7 @@ fun AstronomyGuideApp() {
                         onMenuItemClick = { screen ->
                             appState.navigateTo(screen, closeMenu = configuration.screenWidthDp <= 600)
                         },
+                        onCloseAppClick = { activity?.finishAffinity() },
                         modifier = Modifier
                             .fillMaxHeight()
                             .width(if (configuration.screenWidthDp > 600) 260.dp else 220.dp)
@@ -224,6 +228,7 @@ fun MainContent(
 
         when (currentScreen) {
             Screen.HOME -> HomeScreenContent(onNavigate = onNavigate)
+            Screen.ASTRO_NEWS -> AstroNewsScreenContent(onBackClick = { onNavigate(Screen.HOME) })
             Screen.MOON_PHASE -> MoonPhaseScreenContent(onBackClick = { onNavigate(Screen.HOME) })
             Screen.TELESCOPE_GUIDE -> TelescopeGuideScreenContent(onBackClick = { onNavigate(Screen.HOME) })
             Screen.MESSIER_SEARCH -> MessierSearchScreen(
