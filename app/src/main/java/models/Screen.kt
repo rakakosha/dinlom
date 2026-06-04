@@ -11,6 +11,7 @@ enum class Screen {
     OBSERVATIONS,
     PHOTOS,
     SOCIAL,
+    REGISTRATION,
     SETTINGS;
 
     val displayName: String
@@ -25,6 +26,7 @@ enum class Screen {
             OBSERVATIONS -> "Наблюдения"
             PHOTOS -> "Фотографии"
             SOCIAL -> "Соцсети"
+            REGISTRATION -> "Регистрация"
             SETTINGS -> "Настройки"
         }
 
@@ -40,6 +42,7 @@ enum class Screen {
             OBSERVATIONS -> "✎"
             PHOTOS -> "📷"
             SOCIAL -> "✦"
+            REGISTRATION -> "👤"
             SETTINGS -> "⚙"
         }
 }

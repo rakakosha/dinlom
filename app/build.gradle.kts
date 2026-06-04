@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -37,14 +38,17 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    // Добавьте PGJDBC-NG
-
-
-    // Для работы с NIO
-    implementation("org.apache.mina:mina-core:2.0.21")
+    // PostgreSQL подключается через backend API, а локальная демонстрационная база работает на Room.
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("io.github.cosinekitty:astronomy:2.1.19")
     implementation(platform(libs.androidx.compose.bom))
