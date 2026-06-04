@@ -248,6 +248,7 @@ fun MainContent(
             )
             Screen.PHOTOS -> PhotosScreenContent(onBackClick = { onNavigate(Screen.HOME) })
             Screen.SOCIAL -> SocialScreenContent(onBackClick = { onNavigate(Screen.HOME) })
+            Screen.REGISTRATION -> RegistrationScreenContent(onBackClick = { onNavigate(Screen.HOME) })
             Screen.SETTINGS -> SettingsScreenContent(
                 currentSettings = currentSettings,
                 onBackClick = { onNavigate(Screen.HOME) },

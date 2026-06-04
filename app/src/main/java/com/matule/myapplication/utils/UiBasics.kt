@@ -301,6 +301,7 @@ fun HomeScreenContent(onNavigate: (Screen) -> Unit) {
                 QuickActionCard(tr("Мессье", "Messier")) { onNavigate(Screen.MESSIER_SEARCH) }
                 QuickActionCard(tr("Наблюдения", "Observations")) { onNavigate(Screen.OBSERVATIONS) }
                 QuickActionCard(tr("Фото", "Photos")) { onNavigate(Screen.PHOTOS) }
+                QuickActionCard(tr("Регистрация", "Registration")) { onNavigate(Screen.REGISTRATION) }
                 QuickActionCard(tr("Настройки", "Settings")) { onNavigate(Screen.SETTINGS) }
             }
         }
@@ -354,6 +355,7 @@ fun SideMenuContent(
                 Screen.PHOTOS to tr("Фотографии", "Photos"),
                 Screen.VIDEOS to tr("Видео", "Videos"),
                 Screen.SOCIAL to tr("Соцсети", "Social"),
+                Screen.REGISTRATION to tr("Регистрация", "Registration"),
                 Screen.SETTINGS to tr("Настройки", "Settings")
             )
 
